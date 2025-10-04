@@ -13,7 +13,7 @@
 // API Configuration with CORS Proxy
 const API_CONFIG = {
     // Using a CORS proxy to bypass browser restrictions
-    PROXY: 'https://corsproxy.io/?',
+    PROXY: 'https://api.allorigins.win/raw?url=',
     BASE_URL: 'https://site.api.espn.com/apis/site/v2/sports/soccer',
     ENDPOINTS: {
         SCOREBOARD: '/scoreboard',
