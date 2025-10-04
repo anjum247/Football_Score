@@ -74,8 +74,35 @@
         <div class="container">
             <!-- Page Title (H1) for SEO -->
             <div class="page-header">
-                <h1>Today's Global Football Match Schedule</h1>
+                <h1>Global Football Match Schedule</h1>
                 <p class="page-subtitle">Live scores, real-time updates, and betting odds from leagues worldwide</p>
+                
+                <!-- Date Selector -->
+                <div style="margin: 1.5rem 0; text-align: center;">
+                    <label for="datePicker" style="font-weight: 600; margin-right: 0.5rem; font-size: 1.1rem;">Select Match Date:</label>
+                    <input type="date" id="datePicker" class="date-picker-input" style="padding: 0.75rem 1rem; border-radius: 8px; border: 2px solid var(--primary-color); font-size: 1rem; margin-right: 0.5rem;">
+                    <button id="loadBtn" class="btn-load" style="padding: 0.75rem 1.5rem; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Load Matches</button>
+                </div>
+                
+                <div class="header-actions">
+                    <button id="refreshBtn" class="btn-refresh" aria-label="Refresh scores" style="display: none;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                        <span>Refresh</span>
+                    </button>
+                    <div class="live-indicator" style="display: none;">
+                        <span class="pulse-dot"></span>
+                        <span id="liveCount">0 Live</span>
+                    </div>
+                </div>
+            </div> 0.5rem;">Select Date:</label>
+                    <input type="date" id="datePicker" class="date-picker-input" style="padding: 0.5rem 1rem; border-radius: 8px; border: 2px solid var(--primary-color); font-size: 1rem; margin-right: 1rem;">
+                    <button id="todayBtn" class="btn-today" style="padding: 0.5rem 1rem; background: var(--accent-color); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Today</button>
+                </div>
+                
                 <div class="header-actions">
                     <button id="refreshBtn" class="btn-refresh" aria-label="Refresh scores">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -93,9 +120,9 @@
             </div>
 
             <!-- Loading State -->
-            <div id="loadingState" class="loading-state">
+            <div id="loadingState" class="loading-state" style="display: none;">
                 <div class="spinner"></div>
-                <p>Loading today's matches...</p>
+                <p>Loading matches...</p>
             </div>
 
             <!-- Error State -->
