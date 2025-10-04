@@ -32,21 +32,61 @@ const elements = {
     refreshBtn: document.getElementById('refreshBtn'),
     liveCount: document.getElementById('liveCount'),
     datePicker: document.getElementById('datePicker'),
-    datePickerEmpty: document.getElementById('datePickerEmpty'),
-    todayBtn: document.getElementById('todayBtn')
+    loadBtn: document.getElementById('loadBtn'),
+    headerActions: document.getElementById('headerActions')
 };
 
 // State Management
 let currentMatchData = null;
-let selectedDate = new Date();
+let selectedDate = null;
 
 /**
  * Initialize the application
  */
 function init() {
     console.log('🚀 Initializing Live Soccer Scoreboard...');
+    
+    // Set date picker to today
+    setDatePickerToToday();
+    
+    // Initial fetch
     fetchScheduleData();
+    
+    // Setup event listeners
     setupEventListeners();
+}
+
+/**
+ * Set date picker to today's date
+ */
+function setDatePickerToToday() {
+    const today = new Date();
+    const dateString = formatDateForInput(today);
+    elements.datePicker.value = dateString;
+    if (elements.datePickerEmpty) {
+        elements.datePickerEmpty.value = dateString;
+    }
+    selectedDate = today;
+}
+
+/**
+ * Format date for input field (YYYY-MM-DD)
+ */
+function formatDateForInput(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+/**
+ * Format date for API (YYYYMMDD)
+ */
+function formatDateForAPI(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
 }
 
 /**
@@ -55,6 +95,29 @@ function init() {
 function setupEventListeners() {
     elements.refreshBtn.addEventListener('click', () => {
         console.log('🔄 Manual refresh triggered');
+        fetchScheduleData();
+    });
+    
+    // Date picker change
+    elements.datePicker.addEventListener('change', (e) => {
+        selectedDate = new Date(e.target.value + 'T00:00:00');
+        console.log('📅 Date changed to:', selectedDate);
+        fetchScheduleData();
+    });
+    
+    // Date picker in empty state
+    if (elements.datePickerEmpty) {
+        elements.datePickerEmpty.addEventListener('change', (e) => {
+            selectedDate = new Date(e.target.value + 'T00:00:00');
+            elements.datePicker.value = e.target.value;
+            console.log('📅 Date changed to:', selectedDate);
+            fetchScheduleData();
+        });
+    }
+    
+    // Today button
+    elements.todayBtn.addEventListener('click', () => {
+        setDatePickerToToday();
         fetchScheduleData();
     });
 }
@@ -67,9 +130,11 @@ async function fetchScheduleData() {
     showLoading();
     
     try {
-        const apiUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SCOREBOARD}`;
+        const dateParam = formatDateForAPI(selectedDate);
+        const apiUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SCOREBOARD}?dates=${dateParam}`;
         const url = `${API_CONFIG.PROXY}${encodeURIComponent(apiUrl)}`;
         console.log('API Request:', url);
+        console.log('Selected Date:', selectedDate.toDateString());
         
         const response = await fetch(url);
         
@@ -414,6 +479,14 @@ function showError(message) {
  * Show no matches state
  */
 function showNoMatches() {
+    const dateStr = selectedDate.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+    
+    elements.noMatchesMessage.textContent = `No matches scheduled for ${dateStr}. Try selecting a different date!`;
     elements.loadingState.style.display = 'none';
     elements.errorState.style.display = 'none';
     elements.noMatchesState.style.display = 'block';
