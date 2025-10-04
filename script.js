@@ -12,18 +12,13 @@
 
 // API Configuration with CORS Proxy
 const API_CONFIG = {
-    // Using a CORS proxy to bypass browser restrictions
+    // Using AllOrigins as a reliable CORS proxy
     PROXY: 'https://api.allorigins.win/raw?url=',
     BASE_URL: 'https://site.api.espn.com/apis/site/v2/sports/soccer',
     ENDPOINTS: {
         SCOREBOARD: '/scoreboard',
         SUMMARY: '/summary'
-    },
-    // Fallback proxies if primary fails
-    FALLBACK_PROXIES: [
-        'https://api.allorigins.win/raw?url=',
-        'https://cors-anywhere.herokuapp.com/'
-    ]
+    }
 };
 
 // DOM Elements
@@ -32,13 +27,18 @@ const elements = {
     errorState: document.getElementById('errorState'),
     errorMessage: document.getElementById('errorMessage'),
     noMatchesState: document.getElementById('noMatchesState'),
+    noMatchesMessage: document.getElementById('noMatchesMessage'),
     matchesContainer: document.getElementById('matchesContainer'),
     refreshBtn: document.getElementById('refreshBtn'),
-    liveCount: document.getElementById('liveCount')
+    liveCount: document.getElementById('liveCount'),
+    datePicker: document.getElementById('datePicker'),
+    datePickerEmpty: document.getElementById('datePickerEmpty'),
+    todayBtn: document.getElementById('todayBtn')
 };
 
 // State Management
 let currentMatchData = null;
+let selectedDate = new Date();
 
 /**
  * Initialize the application
