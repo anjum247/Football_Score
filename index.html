@@ -3,102 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Watch live soccer scores today with real-time updates, match schedules, odds, and comprehensive football coverage from leagues worldwide. Your ultimate soccer scoreboard.">
-    <meta name="keywords" content="live soccer scores, football schedule today, soccer matches, real-time scores, soccer odds, football scoreboard">
-    <meta name="author" content="Live Soccer Scores">
-    <meta property="og:title" content="Live Soccer Scores Today | Real-time Football Schedule & Odds Tracker">
-    <meta property="og:description" content="Follow today's soccer matches with live scores, schedules, and odds from top leagues worldwide.">
-    <meta property="og:type" content="website">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Live Soccer Scores Today | Real-time Football Schedule & Odds Tracker">
-    <meta name="twitter:description" content="Follow today's soccer matches with live scores, schedules, and odds from top leagues worldwide.">
     
+    <!-- Primary SEO Meta Tags -->
     <title>Live Soccer Scores Today | Real-time Football Schedule & Odds Tracker</title>
+    <meta name="description" content="Watch live soccer scores and today's football schedule with real-time updates. Track match odds, lineups, and stats from top leagues worldwide including Premier League, La Liga, and Champions League.">
+    <meta name="keywords" content="live soccer scores, football schedule today, live match odds, soccer results, football fixtures, real-time scores">
+    <meta name="author" content="Live Soccer Scoreboard">
     
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yourdomain.com/">
+    <meta property="og:title" content="Live Soccer Scores Today | Real-time Football Schedule">
+    <meta property="og:description" content="Track live soccer matches, scores, and odds from leagues worldwide. Updated in real-time.">
+    <meta property="og:image" content="https://yourdomain.com/og-image.jpg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://yourdomain.com/">
+    <meta property="twitter:title" content="Live Soccer Scores Today | Real-time Football Schedule">
+    <meta property="twitter:description" content="Track live soccer matches, scores, and odds from leagues worldwide. Updated in real-time.">
+    <meta property="twitter:image" content="https://yourdomain.com/twitter-image.jpg">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://yourdomain.com/">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+    
+    <!-- Stylesheet -->
     <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Preconnect to API -->
+    <link rel="preconnect" href="https://site.api.espn.com">
+    
+    <!-- IMPORTANT DISCLAIMER ABOUT API USAGE -->
+    <!-- 
+        ⚠️ UNOFFICIAL API USAGE DISCLAIMER ⚠️
+        This application uses UNOFFICIAL ESPN API endpoints.
+        These endpoints are NOT officially supported by ESPN and may:
+        - Change without notice
+        - Become unavailable at any time
+        - Have rate limiting or access restrictions
+        
+        This is for EDUCATIONAL and DEMONSTRATION purposes only.
+        ESPN® is a registered trademark. This project is not affiliated with,
+        endorsed by, or connected to ESPN in any way.
+        
+        For production use, please obtain official API access with proper
+        authentication and adhere to ESPN's Terms of Service.
+    -->
 </head>
 <body>
     <header class="site-header">
         <div class="container">
             <div class="header-content">
                 <div class="logo">
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="16" cy="16" r="15" stroke="currentColor" stroke-width="2"/>
-                        <path d="M16 2C16 2 10 8 10 16C10 24 16 30 16 30" stroke="currentColor" stroke-width="2"/>
-                        <path d="M16 2C16 2 22 8 22 16C22 24 16 30 16 30" stroke="currentColor" stroke-width="2"/>
-                        <line x1="2" y1="16" x2="30" y2="16" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    <span>LiveScore Soccer</span>
+                    <span class="logo-icon">⚽</span>
+                    <span class="logo-text">LiveScore</span>
                 </div>
-                <button class="refresh-btn" id="refreshBtn" aria-label="Refresh scores">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17 10C17 13.866 13.866 17 10 17C6.134 17 3 13.866 3 10C3 6.134 6.134 3 10 3C12.8 3 15.2 4.8 16.3 7.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        <path d="M14 7H17V4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    Refresh
-                </button>
+                <nav class="main-nav">
+                    <a href="index.html" class="nav-link active">Today's Matches</a>
+                    <a href="#" class="nav-link">Leagues</a>
+                    <a href="#" class="nav-link">Live</a>
+                </nav>
             </div>
         </div>
     </header>
 
     <main class="main-content">
         <div class="container">
-            <section class="hero-section">
+            <!-- Page Title (H1) for SEO -->
+            <div class="page-header">
                 <h1>Today's Global Football Match Schedule</h1>
-                <p class="hero-subtitle">Live scores, real-time updates, and comprehensive match coverage from leagues around the world</p>
-                <div class="last-updated" id="lastUpdated">Loading...</div>
-            </section>
-
-            <div class="api-disclaimer">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2"/>
-                    <path d="M10 6V10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    <circle cx="10" cy="14" r="0.5" fill="currentColor" stroke="currentColor"/>
-                </svg>
-                <p><strong>Data Source Disclaimer:</strong> This application uses unofficial ESPN API endpoints. Data is provided for educational and informational purposes only. ESPN® is a registered trademark. This project is not affiliated with, endorsed by, or connected to ESPN.</p>
+                <p class="page-subtitle">Live scores, real-time updates, and betting odds from leagues worldwide</p>
+                <div class="header-actions">
+                    <button id="refreshBtn" class="btn-refresh" aria-label="Refresh scores">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                        <span>Refresh</span>
+                    </button>
+                    <div class="live-indicator">
+                        <span class="pulse-dot"></span>
+                        <span id="liveCount">0 Live</span>
+                    </div>
+                </div>
             </div>
 
+            <!-- Loading State -->
             <div id="loadingState" class="loading-state">
-                <div class="loading-spinner"></div>
+                <div class="spinner"></div>
                 <p>Loading today's matches...</p>
             </div>
 
+            <!-- Error State -->
             <div id="errorState" class="error-state" style="display: none;">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2"/>
-                    <path d="M24 14V26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    <circle cx="24" cy="32" r="1.5" fill="currentColor"/>
-                </svg>
+                <div class="error-icon">⚠️</div>
                 <h2>Unable to Load Matches</h2>
-                <p id="errorMessage">There was an error fetching the schedule. Please try again.</p>
-                <button class="retry-btn" onclick="location.reload()">Try Again</button>
+                <p id="errorMessage">Please try refreshing the page or check back later.</p>
+                <button onclick="window.location.reload()" class="btn-retry">Try Again</button>
             </div>
 
+            <!-- Matches Container (Grouped by League) -->
+            <div id="matchesContainer" class="matches-container" style="display: none;">
+                <!-- Matches will be dynamically inserted here by script.js -->
+                <!-- Structure will be:
+                    <section class="league-group">
+                        <h2 class="league-header">
+                            <img src="league-logo" alt="League Name">
+                            <span>League Name</span>
+                        </h2>
+                        <div class="matches-grid">
+                            <article class="match-card">...</article>
+                        </div>
+                    </section>
+                -->
+            </div>
+
+            <!-- No Matches State -->
             <div id="noMatchesState" class="no-matches-state" style="display: none;">
-                <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="32" cy="32" r="30" stroke="currentColor" stroke-width="2"/>
-                    <path d="M32 4C32 4 20 16 20 32C20 48 32 60 32 60" stroke="currentColor" stroke-width="2"/>
-                    <path d="M32 4C32 4 44 16 44 32C44 48 32 60 32 60" stroke="currentColor" stroke-width="2"/>
-                    <line x1="4" y1="32" x2="60" y2="32" stroke="currentColor" stroke-width="2"/>
-                </svg>
+                <div class="empty-icon">📅</div>
                 <h2>No Matches Scheduled Today</h2>
-                <p>Check back later for upcoming fixtures and live scores.</p>
+                <p>Check back tomorrow for upcoming fixtures!</p>
             </div>
-
-            <div id="scheduleContainer" class="schedule-container"></div>
         </div>
     </main>
 
     <footer class="site-footer">
         <div class="container">
-            <p>&copy; 2025 LiveScore Soccer. Data sourced from unofficial ESPN API endpoints for educational purposes.</p>
-            <p class="footer-note">This is a demonstration project and is not affiliated with ESPN or any football organization.</p>
+            <div class="footer-content">
+                <p class="footer-disclaimer">
+                    <strong>⚠️ Disclaimer:</strong> This website uses unofficial ESPN API endpoints for educational purposes only. 
+                    Data accuracy is not guaranteed. ESPN® is a registered trademark and this site is not affiliated with ESPN.
+                </p>
+                <p class="footer-copyright">
+                    &copy; 2025 Live Soccer Scoreboard. Made for football fans worldwide. ⚽
+                </p>
+            </div>
         </div>
     </footer>
 
+    <!-- JavaScript -->
     <script src="script.js"></script>
 </body>
 </html>
