@@ -10,8 +10,10 @@
  * For production use, obtain official API access with proper authentication.
  */
 
-// API Configuration
+// API Configuration with CORS Proxy
 const API_CONFIG = {
+    // Using a CORS proxy to bypass browser restrictions
+    PROXY: 'https://corsproxy.io/?',
     BASE_URL: 'https://site.api.espn.com/apis/site/v2/sports/soccer',
     ENDPOINTS: {
         SUMMARY: '/summary'
@@ -86,7 +88,8 @@ async function fetchMatchDetails(id) {
     showLoading();
     
     try {
-        const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SUMMARY}?event=${id}`;
+        const apiUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SUMMARY}?event=${id}`;
+        const url = `${API_CONFIG.PROXY}${encodeURIComponent(apiUrl)}`;
         console.log('API Request:', url);
         
         const response = await fetch(url);
@@ -103,7 +106,7 @@ async function fetchMatchDetails(id) {
         
     } catch (error) {
         console.error('❌ Error fetching match details:', error);
-        showError(error.message);
+        showError(`Failed to load match details. The API service may be temporarily unavailable. Error: ${error.message}`);
     }
 }
 
