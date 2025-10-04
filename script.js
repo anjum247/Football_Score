@@ -10,13 +10,20 @@
  * For production use, obtain official API access with proper authentication.
  */
 
-// API Configuration
+// API Configuration with CORS Proxy
 const API_CONFIG = {
+    // Using a CORS proxy to bypass browser restrictions
+    PROXY: 'https://corsproxy.io/?',
     BASE_URL: 'https://site.api.espn.com/apis/site/v2/sports/soccer',
     ENDPOINTS: {
         SCOREBOARD: '/scoreboard',
         SUMMARY: '/summary'
-    }
+    },
+    // Fallback proxies if primary fails
+    FALLBACK_PROXIES: [
+        'https://api.allorigins.win/raw?url=',
+        'https://cors-anywhere.herokuapp.com/'
+    ]
 };
 
 // DOM Elements
@@ -60,7 +67,8 @@ async function fetchScheduleData() {
     showLoading();
     
     try {
-        const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SCOREBOARD}`;
+        const apiUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SCOREBOARD}`;
+        const url = `${API_CONFIG.PROXY}${encodeURIComponent(apiUrl)}`;
         console.log('API Request:', url);
         
         const response = await fetch(url);
@@ -77,7 +85,7 @@ async function fetchScheduleData() {
         
     } catch (error) {
         console.error('❌ Error fetching schedule:', error);
-        showError(error.message);
+        showError(`Failed to load matches. The API service may be temporarily unavailable. Error: ${error.message}`);
     }
 }
 
