@@ -125,8 +125,12 @@
             <!-- No Matches State -->
             <div id="noMatchesState" class="no-matches-state" style="display: none;">
                 <div class="empty-icon">📅</div>
-                <h2>No Matches Scheduled Today</h2>
-                <p>Check back tomorrow for upcoming fixtures!</p>
+                <h2>No Matches Scheduled</h2>
+                <p id="noMatchesMessage">No matches found for the selected date. Try a different date!</p>
+                <div style="margin-top: 1.5rem;">
+                    <label for="datePicker" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Select a different date:</label>
+                    <input type="date" id="datePickerEmpty" class="date-picker-input" style="padding: 0.75rem; border-radius: 8px; border: 2px solid var(--border-color); font-size: 1rem;">
+                </div>
             </div>
         </div>
     </main>
