@@ -1,469 +1,545 @@
-// ========================================
-// UNOFFICIAL ESPN API DISCLAIMER
-// ========================================
-// This application uses UNOFFICIAL ESPN API endpoints.
-// These endpoints are NOT officially supported by ESPN and may
-// change or become unavailable without notice.
-// Use at your own risk. This is for educational purposes only.
-// ========================================
+/**
+ * ⚠️ UNOFFICIAL ESPN API USAGE DISCLAIMER ⚠️
+ * 
+ * This script uses UNOFFICIAL ESPN API endpoints that are NOT officially
+ * supported by ESPN. These endpoints may change or become unavailable without notice.
+ * 
+ * This is for EDUCATIONAL and DEMONSTRATION purposes ONLY.
+ * ESPN® is a registered trademark. This project is not affiliated with ESPN.
+ * 
+ * For production use, obtain official API access with proper authentication.
+ */
 
-const API_BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
+// API Configuration
+const API_CONFIG = {
+    BASE_URL: 'https://site.api.espn.com/apis/site/v2/sports/soccer',
+    ENDPOINTS: {
+        SUMMARY: '/summary'
+    }
+};
 
 // DOM Elements
-const loadingState = document.getElementById('loadingState');
-const errorState = document.getElementById('errorState');
-const errorMessage = document.getElementById('errorMessage');
-const gameContent = document.getElementById('gameContent');
-const gameTitle = document.getElementById('gameTitle');
-const gameMeta = document.getElementById('gameMeta');
-const gameScoreboard = document.getElementById('gameScoreboard');
-const eventTimeline = document.getElementById('eventTimeline');
-const eventsCard = document.getElementById('eventsCard');
-const statsGrid = document.getElementById('statsGrid');
-const statsCard = document.getElementById('statsCard');
-const lineupGrid = document.getElementById('lineupGrid');
-const lineupsCard = document.getElementById('lineupsCard');
-const venueInfo = document.getElementById('venueInfo');
-const venueCard = document.getElementById('venueCard');
-const refreshBtn = document.getElementById('refreshBtn');
+const elements = {
+    loadingState: document.getElementById('loadingState'),
+    errorState: document.getElementById('errorState'),
+    errorMessage: document.getElementById('errorMessage'),
+    matchContent: document.getElementById('matchContent'),
+    
+    // Scoreboard elements
+    matchTitle: document.getElementById('matchTitle'),
+    homeLogo: document.getElementById('homeLogo'),
+    homeName: document.getElementById('homeName'),
+    homeScore: document.getElementById('homeScore'),
+    awayLogo: document.getElementById('awayLogo'),
+    awayName: document.getElementById('awayName'),
+    awayScore: document.getElementById('awayScore'),
+    matchStatus: document.getElementById('matchStatus'),
+    matchTime: document.getElementById('matchTime'),
+    
+    // Content sections
+    matchInfo: document.getElementById('matchInfo'),
+    eventsSection: document.getElementById('eventsSection'),
+    eventsContainer: document.getElementById('eventsContainer'),
+    statsSection: document.getElementById('statsSection'),
+    statsContainer: document.getElementById('statsContainer'),
+    lineupsSection: document.getElementById('lineupsSection'),
+    lineupsContainer: document.getElementById('lineupsContainer'),
+    venueSection: document.getElementById('venueSection'),
+    venueInfo: document.getElementById('venueInfo')
+};
 
-// Get game ID from URL
+// State
+let currentMatchData = null;
+let gameId = null;
+
+/**
+ * Initialize the application
+ */
+function init() {
+    console.log('🚀 Initializing Match Detail Page...');
+    
+    // Get game ID from URL parameter
+    gameId = getGameIdFromURL();
+    
+    if (!gameId) {
+        showError('No match ID provided. Please return to the schedule.');
+        return;
+    }
+    
+    console.log('🎮 Game ID:', gameId);
+    fetchMatchDetails(gameId);
+}
+
+/**
+ * Get game ID from URL parameter
+ */
 function getGameIdFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('id');
 }
 
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    const gameId = getGameIdFromURL();
-    
-    if (!gameId) {
-        showError('No game ID provided. Please select a match from the schedule.');
-        return;
-    }
-    
-    fetchGameDetails(gameId);
-    setupRefreshButton(gameId);
-});
-
-// Setup refresh button
-function setupRefreshButton(gameId) {
-    refreshBtn.addEventListener('click', () => {
-        refreshBtn.disabled = true;
-        refreshBtn.style.opacity = '0.6';
-        fetchGameDetails(gameId);
-        setTimeout(() => {
-            refreshBtn.disabled = false;
-            refreshBtn.style.opacity = '1';
-        }, 2000);
-    });
-}
-
-// Fetch game details
-async function fetchGameDetails(gameId) {
+/**
+ * Fetch match details from ESPN API
+ */
+async function fetchMatchDetails(id) {
+    console.log('📡 Fetching match details for ID:', id);
     showLoading();
     
     try {
-        const summaryUrl = `${API_BASE_URL}/summary?event=${gameId}`;
-        const response = await fetch(summaryUrl);
+        const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SUMMARY}?event=${id}`;
+        console.log('API Request:', url);
+        
+        const response = await fetch(url);
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP error! Status: ${response.status}`);
         }
         
         const data = await response.json();
+        console.log('✅ Match data fetched successfully:', data);
         
-        if (!data.header) {
-            throw new Error('Invalid game data received');
-        }
-        
-        renderGameDetails(data);
-        hideLoading();
+        currentMatchData = data;
+        displayMatchDetails(data);
         
     } catch (error) {
-        console.error('Error fetching game details:', error);
+        console.error('❌ Error fetching match details:', error);
         showError(error.message);
     }
 }
 
-// Show loading state
-function showLoading() {
-    loadingState.style.display = 'block';
-    errorState.style.display = 'none';
-    gameContent.style.display = 'none';
-}
-
-// Hide loading state
-function hideLoading() {
-    loadingState.style.display = 'none';
-    gameContent.style.display = 'block';
-}
-
-// Show error state
-function showError(message) {
-    loadingState.style.display = 'none';
-    errorState.style.display = 'block';
-    gameContent.style.display = 'none';
-    errorMessage.textContent = message || 'There was an error fetching the match information. Please try again.';
-}
-
-// Render game details
-function renderGameDetails(data) {
-    // Update page title
-    const homeTeam = data.header.competitions[0].competitors.find(t => t.homeAway === 'home');
-    const awayTeam = data.header.competitions[0].competitors.find(t => t.homeAway === 'away');
-    
-    const matchTitle = `${awayTeam.team.displayName} vs ${homeTeam.team.displayName}`;
-    document.title = `${matchTitle} | Live Soccer Scores`;
-    gameTitle.textContent = matchTitle;
-    
-    // Render meta information
-    renderGameMeta(data);
-    
-    // Render scoreboard
-    renderScoreboard(data);
-    
-    // Render match events
-    if (data.commentary && data.commentary.length > 0) {
-        renderEvents(data.commentary);
-    }
-    
-    // Render statistics
-    if (data.stats && data.stats.length > 0) {
-        renderStatistics(data.stats);
-    }
-    
-    // Render lineups
-    if (data.rosters && data.rosters.length > 0) {
-        renderLineups(data.rosters);
-    }
-    
-    // Render venue information
-    renderVenueInfo(data);
-}
-
-// Render game meta
-function renderGameMeta(data) {
-    const competition = data.header.competitions[0];
-    const status = competition.status;
-    const league = data.header.league;
-    const venue = competition.venue;
-    
-    const metaItems = [];
-    
-    if (league) {
-        metaItems.push(`${league.name}`);
-    }
-    
-    if (status.type.description) {
-        metaItems.push(status.type.description);
-    }
-    
-    if (venue && venue.fullName) {
-        metaItems.push(venue.fullName);
-    }
-    
-    const date = new Date(data.header.competitions[0].date);
-    const dateString = date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-    metaItems.push(dateString);
-    
-    gameMeta.innerHTML = metaItems.map(item => `<span>${item}</span>`).join('');
-}
-
-// Render scoreboard
-function renderScoreboard(data) {
-    const competition = data.header.competitions[0];
-    const homeTeam = competition.competitors.find(t => t.homeAway === 'home');
-    const awayTeam = competition.competitors.find(t => t.homeAway === 'away');
-    const status = competition.status;
-    
-    const showScore = status.type.state !== 'pre';
-    
-    gameScoreboard.innerHTML = `
-        <div class="game-team">
-            <img src="${awayTeam.team.logo}" alt="${awayTeam.team.displayName}" class="game-team-logo">
-            <div class="game-team-name">${awayTeam.team.displayName}</div>
-            ${awayTeam.records ? `<div class="game-team-record">${awayTeam.records[0]?.summary || ''}</div>` : ''}
-        </div>
+/**
+ * Display all match details
+ */
+function displayMatchDetails(data) {
+    try {
+        // Update page title and meta
+        updatePageMeta(data);
         
-        ${showScore ? `
-            <div style="display: flex; align-items: center; gap: 1.5rem;">
-                <div class="game-score">${awayTeam.score || '0'}</div>
-                <div class="game-separator">-</div>
-                <div class="game-score">${homeTeam.score || '0'}</div>
-            </div>
-        ` : `
-            <div style="font-size: 1.5rem; font-weight: 700; opacity: 0.8;">VS</div>
-        `}
+        // Display scoreboard
+        displayScoreboard(data);
         
-        <div class="game-team">
-            <img src="${homeTeam.team.logo}" alt="${homeTeam.team.displayName}" class="game-team-logo">
-            <div class="game-team-name">${homeTeam.team.displayName}</div>
-            ${homeTeam.records ? `<div class="game-team-record">${homeTeam.records[0]?.summary || ''}</div>` : ''}
-        </div>
-    `;
+        // Display match information
+        displayMatchInfo(data);
+        
+        // Display events (goals, cards, substitutions)
+        if (data.plays && data.plays.length > 0) {
+            displayEvents(data.plays);
+        }
+        
+        // Display statistics
+        if (data.boxscore && data.boxscore.teams) {
+            displayStatistics(data.boxscore);
+        }
+        
+        // Display lineups
+        if (data.boxscore && data.boxscore.players) {
+            displayLineups(data.boxscore.players);
+        }
+        
+        // Display venue information
+        displayVenueInfo(data);
+        
+        showMatchContent();
+        
+    } catch (error) {
+        console.error('❌ Error displaying match details:', error);
+        showError('Error displaying match information. Some data may be incomplete.');
+    }
 }
 
-// Render events
-function renderEvents(commentary) {
-    const events = commentary.filter(c => c.text && c.text.trim() !== '');
+/**
+ * Update page title and meta tags
+ */
+function updatePageMeta(data) {
+    const header = data.header || {};
+    const competitions = header.competitions || [];
+    const competition = competitions[0] || {};
+    const competitors = competition.competitors || [];
     
-    if (events.length === 0) {
+    if (competitors.length >= 2) {
+        const homeTeam = competitors.find(c => c.homeAway === 'home') || competitors[0];
+        const awayTeam = competitors.find(c => c.homeAway === 'away') || competitors[1];
+        
+        const matchTitle = `${homeTeam.team.displayName} vs ${awayTeam.team.displayName}`;
+        const leagueName = header.league?.name || 'Soccer';
+        
+        // Update document title
+        document.title = `${matchTitle} - Live Match Details | ${leagueName}`;
+        
+        // Update meta description
+        const metaDescription = document.querySelector('meta[name="description"]');
+        if (metaDescription) {
+            metaDescription.content = `Watch ${matchTitle} live with real-time updates, lineups, statistics, and match events from ${leagueName}.`;
+        }
+    }
+}
+
+/**
+ * Display scoreboard
+ */
+function displayScoreboard(data) {
+    const header = data.header || {};
+    const competitions = header.competitions || [];
+    const competition = competitions[0] || {};
+    const competitors = competition.competitors || [];
+    const status = competition.status || {};
+    
+    if (competitors.length >= 2) {
+        const homeTeam = competitors.find(c => c.homeAway === 'home') || competitors[0];
+        const awayTeam = competitors.find(c => c.homeAway === 'away') || competitors[1];
+        
+        // Home Team
+        elements.homeLogo.src = homeTeam.team.logo || '';
+        elements.homeLogo.alt = `${homeTeam.team.displayName} logo`;
+        elements.homeName.textContent = homeTeam.team.displayName;
+        elements.homeScore.textContent = homeTeam.score || '0';
+        
+        // Away Team
+        elements.awayLogo.src = awayTeam.team.logo || '';
+        elements.awayLogo.alt = `${awayTeam.team.displayName} logo`;
+        elements.awayName.textContent = awayTeam.team.displayName;
+        elements.awayScore.textContent = awayTeam.score || '0';
+        
+        // Match Title (H1)
+        elements.matchTitle.textContent = `${homeTeam.team.displayName} vs ${awayTeam.team.displayName}`;
+    }
+    
+    // Match Status
+    const state = status.type?.state;
+    if (state === 'in') {
+        elements.matchStatus.innerHTML = `
+            <span class="pulse-dot"></span>
+            <span style="color: var(--live-color); font-weight: 700;">LIVE</span>
+        `;
+        elements.matchTime.textContent = status.displayClock || status.type?.shortDetail || '';
+    } else if (state === 'pre') {
+        elements.matchStatus.textContent = 'VS';
+        elements.matchTime.textContent = status.type?.shortDetail || '';
+    } else {
+        elements.matchStatus.textContent = 'FT';
+        elements.matchTime.textContent = status.type?.shortDetail || 'Full Time';
+    }
+}
+
+/**
+ * Display match information
+ */
+function displayMatchInfo(data) {
+    const header = data.header || {};
+    const gameInfo = data.gameInfo || {};
+    
+    const infoItems = [];
+    
+    // League
+    if (header.league) {
+        infoItems.push({
+            label: 'Competition',
+            value: header.league.name,
+            icon: '🏆'
+        });
+    }
+    
+    // Venue
+    if (gameInfo.venue) {
+        infoItems.push({
+            label: 'Venue',
+            value: gameInfo.venue.fullName,
+            icon: '🏟️'
+        });
+    }
+    
+    // Attendance
+    if (gameInfo.attendance) {
+        infoItems.push({
+            label: 'Attendance',
+            value: gameInfo.attendance.toLocaleString(),
+            icon: '👥'
+        });
+    }
+    
+    // Referee
+    if (gameInfo.officials && gameInfo.officials.length > 0) {
+        const referee = gameInfo.officials.find(o => o.position === 'Referee');
+        if (referee) {
+            infoItems.push({
+                label: 'Referee',
+                value: referee.displayName,
+                icon: '👨‍⚖️'
+            });
+        }
+    }
+    
+    // Weather (if available)
+    if (gameInfo.weather) {
+        infoItems.push({
+            label: 'Weather',
+            value: `${gameInfo.weather.displayValue}, ${gameInfo.weather.temperature}°`,
+            icon: '🌤️'
+        });
+    }
+    
+    // Broadcast
+    if (gameInfo.broadcasts && gameInfo.broadcasts.length > 0) {
+        const broadcast = gameInfo.broadcasts[0];
+        if (broadcast.names && broadcast.names.length > 0) {
+            infoItems.push({
+                label: 'Broadcast',
+                value: broadcast.names.join(', '),
+                icon: '📺'
+            });
+        }
+    }
+    
+    // Render info items
+    elements.matchInfo.innerHTML = infoItems.map(item => `
+        <div style="padding: 1rem; background: var(--bg-color); border-radius: 8px;">
+            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">${item.icon}</div>
+            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">${item.label}</div>
+            <div style="font-weight: 600; color: var(--text-primary);">${item.value}</div>
+        </div>
+    `).join('');
+}
+
+/**
+ * Display match events (goals, cards, substitutions)
+ */
+function displayEvents(plays) {
+    const importantEvents = plays.filter(play => 
+        play.scoringPlay || 
+        play.typeText === 'Yellow Card' || 
+        play.typeText === 'Red Card' ||
+        play.typeText === 'Substitution'
+    );
+    
+    if (importantEvents.length === 0) {
         return;
     }
     
-    eventsCard.style.display = 'block';
+    elements.eventsSection.style.display = 'block';
     
-    eventTimeline.innerHTML = events.map(event => {
-        const time = event.time?.displayValue || '';
-        const text = event.text || '';
+    elements.eventsContainer.innerHTML = importantEvents.map(event => {
+        const eventClass = event.scoringPlay ? 'goal' : 'card';
+        const time = event.clock?.displayValue || event.period?.displayValue || '';
+        const team = event.team?.displayName || '';
+        const description = event.text || event.typeText || '';
         
         return `
-            <div class="timeline-item">
-                ${time ? `<div class="timeline-time">${time}'</div>` : ''}
-                <div class="timeline-content">
-                    <div class="timeline-description">${text}</div>
+            <div class="timeline-event ${eventClass}">
+                <div class="event-time">${time}'</div>
+                <div class="event-description">
+                    <div style="font-weight: 600; margin-bottom: 0.25rem;">${team}</div>
+                    <div style="color: var(--text-secondary);">${description}</div>
                 </div>
             </div>
         `;
     }).join('');
 }
 
-// Render statistics
-function renderStatistics(stats) {
-    const homeStats = stats.find(s => s.name === 'home')?.stats || [];
-    const awayStats = stats.find(s => s.name === 'away')?.stats || [];
+/**
+ * Display match statistics
+ */
+function displayStatistics(boxscore) {
+    const teams = boxscore.teams || [];
+    
+    if (teams.length < 2) {
+        return;
+    }
+    
+    const homeTeam = teams[0];
+    const awayTeam = teams[1];
+    
+    const homeStats = homeTeam.statistics || [];
+    const awayStats = awayTeam.statistics || [];
     
     if (homeStats.length === 0 && awayStats.length === 0) {
         return;
     }
     
-    statsCard.style.display = 'block';
+    elements.statsSection.style.display = 'block';
     
-    // Create a map of stats by name
-    const statMap = new Map();
+    // Create stat items
+    const statNames = [...new Set([
+        ...homeStats.map(s => s.name),
+        ...awayStats.map(s => s.name)
+    ])];
     
-    homeStats.forEach(stat => {
-        statMap.set(stat.name, { home: stat.displayValue, away: null, label: stat.label });
-    });
-    
-    awayStats.forEach(stat => {
-        if (statMap.has(stat.name)) {
-            statMap.get(stat.name).away = stat.displayValue;
-        } else {
-            statMap.set(stat.name, { home: null, away: stat.displayValue, label: stat.label });
-        }
-    });
-    
-    statsGrid.innerHTML = Array.from(statMap.entries()).map(([name, data]) => {
-        const homeValue = parseFloat(data.home) || 0;
-        const awayValue = parseFloat(data.away) || 0;
+    elements.statsContainer.innerHTML = statNames.map(statName => {
+        const homeStat = homeStats.find(s => s.name === statName);
+        const awayStat = awayStats.find(s => s.name === statName);
+        
+        const homeValue = parseFloat(homeStat?.displayValue || 0);
+        const awayValue = parseFloat(awayStat?.displayValue || 0);
         const total = homeValue + awayValue;
-        const homePercentage = total > 0 ? (homeValue / total) * 100 : 50;
+        
+        const homePercent = total > 0 ? (homeValue / total) * 100 : 50;
+        const awayPercent = total > 0 ? (awayValue / total) * 100 : 50;
         
         return `
-            <div class="stat-row">
-                <div class="stat-values">
-                    <span class="stat-value">${data.home || '0'}</span>
+            <div class="stat-bar">
+                <div class="stat-label">
+                    <span>${homeStat?.displayValue || '0'}</span>
+                    <span style="font-weight: 600;">${statName}</span>
+                    <span>${awayStat?.displayValue || '0'}</span>
                 </div>
-                <div style="flex: 1; text-align: center;">
-                    <div class="stat-label">${data.label || name}</div>
-                    <div class="stat-bar">
-                        <div class="stat-bar-fill" style="width: ${homePercentage}%;"></div>
-                    </div>
-                </div>
-                <div class="stat-values">
-                    <span class="stat-value">${data.away || '0'}</span>
+                <div class="stat-visual">
+                    <div class="stat-fill-home" style="width: ${homePercent}%"></div>
+                    <div class="stat-fill-away" style="width: ${awayPercent}%"></div>
                 </div>
             </div>
         `;
     }).join('');
 }
 
-// Render lineups
-function renderLineups(rosters) {
-    if (rosters.length === 0) {
+/**
+ * Display team lineups
+ */
+function displayLineups(players) {
+    if (!players || players.length < 2) {
         return;
     }
     
-    lineupsCard.style.display = 'block';
+    elements.lineupsSection.style.display = 'block';
     
-    lineupGrid.innerHTML = rosters.map(roster => {
-        const teamName = roster.team?.displayName || 'Team';
-        const players = roster.roster || [];
-        
-        // Filter starting lineup
-        const starters = players.filter(p => p.starter === true);
+    elements.lineupsContainer.innerHTML = players.map(team => {
+        const starters = team.statistics?.[0]?.athletes || [];
         
         if (starters.length === 0) {
-            return `
-                <div class="lineup-team">
-                    <h3>${teamName}</h3>
-                    <p style="color: var(--text-secondary); font-size: 0.875rem;">Lineup not available</p>
-                </div>
-            `;
+            return '';
         }
         
         return `
             <div class="lineup-team">
-                <h3>${teamName}</h3>
-                <div class="player-list">
-                    ${starters.map(player => `
-                        <div class="player-item">
-                            <div class="player-number">${player.jersey || '-'}</div>
-                            <div class="player-info">
-                                <div class="player-name">${player.athlete?.displayName || 'Unknown'}</div>
-                                <div class="player-position">${player.position?.abbreviation || player.position?.name || ''}</div>
+                <h3>${team.team.displayName}</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    ${starters.map(player => {
+                        const position = player.position?.abbreviation || '';
+                        return `
+                            <div class="player-item">
+                                <span class="player-number">${player.jersey || ''}</span>
+                                <span style="font-weight: 600;">${player.athlete?.displayName || 'Unknown'}</span>
+                                ${position ? `<span style="margin-left: 0.5rem; color: var(--text-secondary); font-size: 0.875rem;">${position}</span>` : ''}
                             </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+/**
+ * Display venue and additional information
+ */
+function displayVenueInfo(data) {
+    const gameInfo = data.gameInfo || {};
+    const venue = gameInfo.venue;
+    
+    if (!venue && !gameInfo.attendance && !gameInfo.weather) {
+        return;
+    }
+    
+    elements.venueSection.style.display = 'block';
+    
+    let venueHTML = '';
+    
+    if (venue) {
+        venueHTML += `
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--text-primary);">Stadium</h3>
+                <div style="display: grid; gap: 1rem;">
+                    <div style="padding: 1rem; background: var(--bg-color); border-radius: 8px;">
+                        <div style="font-weight: 600; margin-bottom: 0.5rem;">${venue.fullName || venue.name || 'Unknown Venue'}</div>
+                        ${venue.address ? `
+                            <div style="color: var(--text-secondary); font-size: 0.875rem;">
+                                ${venue.address.city ? venue.address.city + ', ' : ''}${venue.address.country || ''}
+                            </div>
+                        ` : ''}
+                        ${venue.capacity ? `
+                            <div style="color: var(--text-secondary); font-size: 0.875rem; margin-top: 0.25rem;">
+                                Capacity: ${venue.capacity.toLocaleString()}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    if (gameInfo.weather) {
+        venueHTML += `
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--text-primary);">Weather Conditions</h3>
+                <div style="padding: 1rem; background: var(--bg-color); border-radius: 8px;">
+                    <div style="font-weight: 600; margin-bottom: 0.5rem;">
+                        ${gameInfo.weather.displayValue || 'N/A'}
+                    </div>
+                    ${gameInfo.weather.temperature ? `
+                        <div style="color: var(--text-secondary); font-size: 0.875rem;">
+                            Temperature: ${gameInfo.weather.temperature}°F
+                        </div>
+                    ` : ''}
+                    ${gameInfo.weather.conditionId ? `
+                        <div style="color: var(--text-secondary); font-size: 0.875rem;">
+                            Condition: ${gameInfo.weather.conditionId}
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
+    if (gameInfo.officials && gameInfo.officials.length > 0) {
+        venueHTML += `
+            <div>
+                <h3 style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--text-primary);">Match Officials</h3>
+                <div style="display: grid; gap: 0.5rem;">
+                    ${gameInfo.officials.map(official => `
+                        <div style="padding: 0.75rem; background: var(--bg-color); border-radius: 8px; display: flex; justify-content: space-between;">
+                            <span style="font-weight: 600;">${official.displayName}</span>
+                            <span style="color: var(--text-secondary);">${official.position || 'Official'}</span>
                         </div>
                     `).join('')}
                 </div>
             </div>
         `;
-    }).join('');
+    }
+    
+    elements.venueInfo.innerHTML = venueHTML;
 }
 
-// Render venue information
-function renderVenueInfo(data) {
-    const competition = data.header.competitions[0];
-    const venue = competition.venue;
-    const broadcasts = competition.broadcasts || [];
-    const officials = data.gameInfo?.officials || [];
-    const attendance = data.gameInfo?.attendance;
-    
-    const infoItems = [];
-    
-    if (venue) {
-        if (venue.fullName) {
-            infoItems.push({
-                icon: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10 10C11.1 10 12 9.1 12 8C12 6.9 11.1 6 10 6C8.9 6 8 6.9 8 8C8 9.1 8.9 10 10 10Z" fill="currentColor"/>
-                    <path d="M10 2C6.7 2 4 4.7 4 8C4 12 10 18 10 18C10 18 16 12 16 8C16 4.7 13.3 2 10 2Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                </svg>`,
-                label: 'Venue',
-                value: venue.fullName
-            });
-        }
-        
-        if (venue.address && venue.address.city) {
-            const location = [venue.address.city, venue.address.country].filter(Boolean).join(', ');
-            if (location) {
-                infoItems.push({
-                    icon: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                        <path d="M10 2C10 2 6 6 6 10C6 14 10 18 10 18" stroke="currentColor" stroke-width="1.5"/>
-                        <path d="M10 2C10 2 14 6 14 10C14 14 10 18 10 18" stroke="currentColor" stroke-width="1.5"/>
-                        <line x1="2" y1="10" x2="18" y2="10" stroke="currentColor" stroke-width="1.5"/>
-                    </svg>`,
-                    label: 'Location',
-                    value: location
-                });
-            }
-        }
-        
-        if (venue.capacity) {
-            infoItems.push({
-                icon: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="10" cy="7" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                    <path d="M4 18C4 14 6.5 12 10 12C13.5 12 16 14 16 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>`,
-                label: 'Capacity',
-                value: venue.capacity.toLocaleString()
-            });
-        }
-    }
-    
-    if (attendance) {
-        infoItems.push({
-            icon: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="7" cy="6" r="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                <circle cx="13" cy="6" r="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                <path d="M3 16C3 13.5 4.5 12 7 12C9.5 12 11 13.5 11 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M9 16C9 13.5 10.5 12 13 12C15.5 12 17 13.5 17 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>`,
-            label: 'Attendance',
-            value: attendance.toLocaleString()
-        });
-    }
-    
-    if (broadcasts.length > 0) {
-        const broadcastNames = broadcasts.map(b => b.names?.[0]).filter(Boolean).join(', ');
-        if (broadcastNames) {
-            infoItems.push({
-                icon: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="4" width="16" height="10" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                    <path d="M6 14L6 17L14 17L14 14" stroke="currentColor" stroke-width="1.5"/>
-                    <line x1="10" y1="17" x2="10" y2="18" stroke="currentColor" stroke-width="1.5"/>
-                </svg>`,
-                label: 'Broadcast',
-                value: broadcastNames
-            });
-        }
-    }
-    
-    if (officials.length > 0) {
-        const referee = officials.find(o => o.position?.name === 'Referee' || o.order === 1);
-        if (referee && referee.official?.fullName) {
-            infoItems.push({
-                icon: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="10" cy="6" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                    <path d="M5 18C5 14.5 7 13 10 13C13 13 15 14.5 15 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>`,
-                label: 'Referee',
-                value: referee.official.fullName
-            });
-        }
-    }
-    
-    const weather = data.gameInfo?.weather;
-    if (weather) {
-        const weatherDetails = [];
-        if (weather.displayValue) weatherDetails.push(weather.displayValue);
-        if (weather.temperature) weatherDetails.push(`${weather.temperature}°F`);
-        
-        if (weatherDetails.length > 0) {
-            infoItems.push({
-                icon: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                    <line x1="10" y1="2" x2="10" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                    <line x1="10" y1="16" x2="10" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                    <line x1="18" y1="10" x2="16" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                    <line x1="4" y1="10" x2="2" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>`,
-                label: 'Weather',
-                value: weatherDetails.join(', ')
-            });
-        }
-    }
-    
-    if (infoItems.length === 0) {
-        return;
-    }
-    
-    venueCard.style.display = 'block';
-    
-    venueInfo.innerHTML = `
-        <div style="display: grid; gap: 1rem;">
-            ${infoItems.map(item => `
-                <div style="display: flex; align-items: flex-start; gap: 1rem; padding: 0.75rem; background-color: var(--bg-secondary); border-radius: 0.5rem;">
-                    <div style="color: var(--primary-color); flex-shrink: 0; margin-top: 0.125rem;">
-                        ${item.icon}
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; margin-bottom: 0.25rem; letter-spacing: 0.05em;">
-                            ${item.label}
-                        </div>
-                        <div style="font-size: 0.9375rem; color: var(--text-primary); font-weight: 500;">
-                            ${item.value}
-                        </div>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `;
+/**
+ * Show loading state
+ */
+function showLoading() {
+    elements.loadingState.style.display = 'block';
+    elements.errorState.style.display = 'none';
+    elements.matchContent.style.display = 'none';
 }
+
+/**
+ * Show error state
+ */
+function showError(message) {
+    elements.errorMessage.textContent = message || 'Unable to load match details. Please try again later.';
+    elements.loadingState.style.display = 'none';
+    elements.errorState.style.display = 'block';
+    elements.matchContent.style.display = 'none';
+}
+
+/**
+ * Show match content
+ */
+function showMatchContent() {
+    elements.loadingState.style.display = 'none';
+    elements.errorState.style.display = 'none';
+    elements.matchContent.style.display = 'block';
+}
+
+// Initialize app when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+
+console.log('✅ Game script loaded successfully');
