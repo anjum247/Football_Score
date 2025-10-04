@@ -12,8 +12,6 @@
 
 // API Configuration with CORS Proxy
 const API_CONFIG = {
-    // Using AllOrigins as a reliable CORS proxy
-    PROXY: 'https://api.allorigins.win/raw?url=',
     BASE_URL: 'https://site.api.espn.com/apis/site/v2/sports/soccer',
     ENDPOINTS: {
         SCOREBOARD: '/scoreboard',
