@@ -1,173 +1,184 @@
-// ========================================
-// UNOFFICIAL ESPN API DISCLAIMER
-// ========================================
-// This application uses UNOFFICIAL ESPN API endpoints.
-// These endpoints are NOT officially supported by ESPN and may
-// change or become unavailable without notice.
-// Use at your own risk. This is for educational purposes only.
-// ========================================
+/**
+ * ⚠️ UNOFFICIAL ESPN API USAGE DISCLAIMER ⚠️
+ * 
+ * This script uses UNOFFICIAL ESPN API endpoints that are NOT officially
+ * supported by ESPN. These endpoints may change or become unavailable without notice.
+ * 
+ * This is for EDUCATIONAL and DEMONSTRATION purposes ONLY.
+ * ESPN® is a registered trademark. This project is not affiliated with ESPN.
+ * 
+ * For production use, obtain official API access with proper authentication.
+ */
 
-const API_BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
-const SCOREBOARD_ENDPOINT = `${API_BASE_URL}/scoreboard`;
+// API Configuration
+const API_CONFIG = {
+    BASE_URL: 'https://site.api.espn.com/apis/site/v2/sports/soccer',
+    ENDPOINTS: {
+        SCOREBOARD: '/scoreboard',
+        SUMMARY: '/summary'
+    }
+};
 
 // DOM Elements
-const scheduleContainer = document.getElementById('scheduleContainer');
-const loadingState = document.getElementById('loadingState');
-const errorState = document.getElementById('errorState');
-const noMatchesState = document.getElementById('noMatchesState');
-const lastUpdated = document.getElementById('lastUpdated');
-const refreshBtn = document.getElementById('refreshBtn');
-const errorMessage = document.getElementById('errorMessage');
+const elements = {
+    loadingState: document.getElementById('loadingState'),
+    errorState: document.getElementById('errorState'),
+    errorMessage: document.getElementById('errorMessage'),
+    noMatchesState: document.getElementById('noMatchesState'),
+    matchesContainer: document.getElementById('matchesContainer'),
+    refreshBtn: document.getElementById('refreshBtn'),
+    liveCount: document.getElementById('liveCount')
+};
 
-// State
-let matchesData = null;
+// State Management
+let currentMatchData = null;
 
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    fetchSchedule();
-    setupRefreshButton();
-});
+/**
+ * Initialize the application
+ */
+function init() {
+    console.log('🚀 Initializing Live Soccer Scoreboard...');
+    fetchScheduleData();
+    setupEventListeners();
+}
 
-// Setup refresh button
-function setupRefreshButton() {
-    refreshBtn.addEventListener('click', () => {
-        refreshBtn.disabled = true;
-        refreshBtn.style.opacity = '0.6';
-        fetchSchedule();
-        setTimeout(() => {
-            refreshBtn.disabled = false;
-            refreshBtn.style.opacity = '1';
-        }, 2000);
+/**
+ * Setup event listeners
+ */
+function setupEventListeners() {
+    elements.refreshBtn.addEventListener('click', () => {
+        console.log('🔄 Manual refresh triggered');
+        fetchScheduleData();
     });
 }
 
-// Fetch schedule data
-async function fetchSchedule() {
+/**
+ * Fetch today's schedule data from ESPN API
+ */
+async function fetchScheduleData() {
+    console.log('📡 Fetching schedule data...');
     showLoading();
     
     try {
-        const response = await fetch(SCOREBOARD_ENDPOINT);
+        const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SCOREBOARD}`;
+        console.log('API Request:', url);
+        
+        const response = await fetch(url);
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP error! Status: ${response.status}`);
         }
         
         const data = await response.json();
-        matchesData = data;
+        console.log('✅ Data fetched successfully:', data);
         
-        if (!data.events || data.events.length === 0) {
-            showNoMatches();
-            return;
-        }
-        
-        renderSchedule(data);
-        updateLastUpdatedTime();
-        hideLoading();
+        currentMatchData = data;
+        processAndDisplayMatches(data);
         
     } catch (error) {
-        console.error('Error fetching schedule:', error);
+        console.error('❌ Error fetching schedule:', error);
         showError(error.message);
     }
 }
 
-// Show loading state
-function showLoading() {
-    loadingState.style.display = 'block';
-    errorState.style.display = 'none';
-    noMatchesState.style.display = 'none';
-    scheduleContainer.style.display = 'none';
+/**
+ * Process and display matches grouped by league
+ */
+function processAndDisplayMatches(data) {
+    const events = data.events || [];
+    
+    if (events.length === 0) {
+        showNoMatches();
+        return;
+    }
+    
+    // Group matches by league
+    const groupedMatches = groupMatchesByLeague(events);
+    
+    // Count live matches
+    const liveMatches = events.filter(event => 
+        event.status.type.state === 'in'
+    ).length;
+    
+    updateLiveCount(liveMatches);
+    
+    // Render grouped matches
+    renderMatchGroups(groupedMatches);
+    
+    showMatches();
 }
 
-// Hide loading state
-function hideLoading() {
-    loadingState.style.display = 'none';
-    scheduleContainer.style.display = 'block';
-}
-
-// Show error state
-function showError(message) {
-    loadingState.style.display = 'none';
-    errorState.style.display = 'block';
-    errorMessage.textContent = message || 'There was an error fetching the schedule. Please try again.';
-}
-
-// Show no matches state
-function showNoMatches() {
-    loadingState.style.display = 'none';
-    noMatchesState.style.display = 'block';
-}
-
-// Update last updated time
-function updateLastUpdatedTime() {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: true 
-    });
-    lastUpdated.textContent = `Last updated: ${timeString}`;
-}
-
-// Group matches by league
+/**
+ * Group matches by their league/competition
+ */
 function groupMatchesByLeague(events) {
     const grouped = {};
     
     events.forEach(event => {
-        const leagueId = event.competitions[0]?.league?.id || 'unknown';
+        const league = event.league || { name: 'Unknown League', logo: '' };
+        const leagueName = league.name;
         
-        if (!grouped[leagueId]) {
-            grouped[leagueId] = {
-                league: event.competitions[0]?.league || {},
+        if (!grouped[leagueName]) {
+            grouped[leagueName] = {
+                league: league,
                 matches: []
             };
         }
         
-        grouped[leagueId].matches.push(event);
+        grouped[leagueName].matches.push(event);
     });
     
-    return Object.values(grouped);
+    return grouped;
 }
 
-// Render schedule
-function renderSchedule(data) {
-    const groupedMatches = groupMatchesByLeague(data.events);
-    scheduleContainer.innerHTML = '';
+/**
+ * Render all match groups
+ */
+function renderMatchGroups(groupedMatches) {
+    elements.matchesContainer.innerHTML = '';
     
-    groupedMatches.forEach(group => {
-        const section = createLeagueSection(group);
-        scheduleContainer.appendChild(section);
+    // Sort leagues alphabetically
+    const sortedLeagues = Object.keys(groupedMatches).sort();
+    
+    sortedLeagues.forEach(leagueName => {
+        const group = groupedMatches[leagueName];
+        const leagueSection = createLeagueSection(group);
+        elements.matchesContainer.appendChild(leagueSection);
     });
 }
 
-// Create league section
+/**
+ * Create a league section with all its matches
+ */
 function createLeagueSection(group) {
     const section = document.createElement('section');
-    section.className = 'league-section';
+    section.className = 'league-group';
     
-    const header = document.createElement('div');
+    // League Header (H2 for SEO)
+    const header = document.createElement('h2');
     header.className = 'league-header';
     
-    const leagueName = group.league.name || 'Unknown League';
-    const leagueLogo = group.league.logos?.[0]?.href || '';
-    const matchCount = group.matches.length;
+    if (group.league.logo) {
+        const logo = document.createElement('img');
+        logo.src = group.league.logo;
+        logo.alt = `${group.league.name} logo`;
+        logo.loading = 'lazy';
+        header.appendChild(logo);
+    }
     
-    header.innerHTML = `
-        ${leagueLogo ? `<img src="${leagueLogo}" alt="${leagueName}" class="league-logo">` : ''}
-        <div class="league-info">
-            <h2>${leagueName}</h2>
-            <p>${group.league.abbreviation || ''}</p>
-        </div>
-        <span class="match-count">${matchCount} ${matchCount === 1 ? 'match' : 'matches'}</span>
-    `;
+    const leagueName = document.createElement('span');
+    leagueName.textContent = group.league.name;
+    header.appendChild(leagueName);
     
     section.appendChild(header);
     
+    // Matches Grid
     const matchesGrid = document.createElement('div');
     matchesGrid.className = 'matches-grid';
     
     group.matches.forEach(match => {
-        const card = createMatchCard(match);
-        matchesGrid.appendChild(card);
+        const matchCard = createMatchCard(match);
+        matchesGrid.appendChild(matchCard);
     });
     
     section.appendChild(matchesGrid);
@@ -175,197 +186,248 @@ function createLeagueSection(group) {
     return section;
 }
 
-// Create match card
+/**
+ * Create a match card element
+ */
 function createMatchCard(match) {
-    const card = document.createElement('article');
-    card.className = 'match-card';
+    const article = document.createElement('article');
+    article.className = 'match-card';
     
-    const competition = match.competitions[0];
-    const status = competition.status;
-    const isLive = status.type.state === 'in';
+    const status = match.status.type.state;
+    const isLive = status === 'in';
     
     if (isLive) {
-        card.classList.add('live');
+        article.classList.add('live');
     }
     
-    // Make card clickable
-    card.style.cursor = 'pointer';
-    card.addEventListener('click', () => {
-        window.location.href = `game.html?id=${match.id}`;
+    // Make card clickable - redirect to detail page
+    article.addEventListener('click', () => {
+        const gameId = match.id;
+        window.location.href = `game.html?id=${gameId}`;
     });
     
-    // Status and time
-    const statusBadge = getStatusBadge(status);
-    const matchTime = getMatchTime(match);
+    // Match Status Badge
+    const statusBadge = createStatusBadge(match.status);
+    article.appendChild(statusBadge);
     
-    // Teams
-    const homeTeam = competition.competitors.find(t => t.homeAway === 'home');
-    const awayTeam = competition.competitors.find(t => t.homeAway === 'away');
+    // Teams Container
+    const teamsContainer = createTeamsContainer(match.competitions[0]);
+    article.appendChild(teamsContainer);
     
-    card.innerHTML = `
-        <div class="match-status">
-            ${statusBadge}
-            <span class="match-time">${matchTime}</span>
-        </div>
-        
-        <div class="teams-container">
-            ${createTeamHTML(homeTeam, status)}
-            ${createTeamHTML(awayTeam, status)}
-        </div>
-        
-        ${createMatchDetailsHTML(competition)}
-        ${createOddsHTML(competition)}
-    `;
+    // Match Details
+    const matchDetails = createMatchDetails(match);
+    article.appendChild(matchDetails);
     
-    return card;
+    // Odds Display (if available)
+    const odds = match.competitions[0]?.odds?.[0];
+    if (odds) {
+        const oddsContainer = createOddsDisplay(odds);
+        article.appendChild(oddsContainer);
+    }
+    
+    return article;
 }
 
-// Get status badge
-function getStatusBadge(status) {
+/**
+ * Create status badge
+ */
+function createStatusBadge(status) {
+    const badge = document.createElement('div');
     const state = status.type.state;
-    const displayClock = status.displayClock || '';
     
-    if (state === 'pre') {
-        return `<span class="status-badge pre">Scheduled</span>`;
-    } else if (state === 'in') {
-        return `
-            <span class="status-badge live">
-                <span class="live-indicator"></span>
-                Live ${displayClock}
-            </span>
+    if (state === 'in') {
+        badge.className = 'match-status live';
+        badge.innerHTML = `
+            <span class="pulse-dot"></span>
+            <span>LIVE - ${status.displayClock || status.type.shortDetail}</span>
         `;
+    } else if (state === 'pre') {
+        badge.className = 'match-status scheduled';
+        badge.textContent = status.type.shortDetail;
     } else {
-        return `<span class="status-badge post">Final</span>`;
+        badge.className = 'match-status finished';
+        badge.textContent = 'FT';
     }
+    
+    return badge;
 }
 
-// Get match time
-function getMatchTime(match) {
-    const date = new Date(match.date);
-    const now = new Date();
-    const status = match.competitions[0].status;
+/**
+ * Create teams container with scores
+ */
+function createTeamsContainer(competition) {
+    const container = document.createElement('div');
+    container.className = 'teams-container';
     
-    if (status.type.state === 'in') {
-        return status.type.detail || 'In Progress';
-    } else if (status.type.state === 'post') {
-        return 'Full Time';
-    } else {
-        const timeString = date.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-        });
+    const competitors = competition.competitors || [];
+    
+    competitors.forEach(competitor => {
+        const teamRow = document.createElement('div');
+        teamRow.className = 'team-row';
         
-        const isToday = date.toDateString() === now.toDateString();
+        const teamInfo = document.createElement('div');
+        teamInfo.className = 'team-info';
         
-        if (isToday) {
-            return timeString;
-        } else {
-            const dateString = date.toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric'
-            });
-            return `${dateString}, ${timeString}`;
+        if (competitor.team.logo) {
+            const logo = document.createElement('img');
+            logo.src = competitor.team.logo;
+            logo.alt = `${competitor.team.displayName} logo`;
+            logo.className = 'team-logo';
+            logo.loading = 'lazy';
+            teamInfo.appendChild(logo);
         }
-    }
+        
+        const teamName = document.createElement('span');
+        teamName.className = 'team-name';
+        teamName.textContent = competitor.team.displayName || competitor.team.name;
+        teamInfo.appendChild(teamName);
+        
+        teamRow.appendChild(teamInfo);
+        
+        const score = document.createElement('span');
+        score.className = 'team-score';
+        score.textContent = competitor.score || '-';
+        teamRow.appendChild(score);
+        
+        container.appendChild(teamRow);
+    });
+    
+    return container;
 }
 
-// Create team HTML
-function createTeamHTML(team, status) {
-    const score = team.score || '0';
-    const showScore = status.type.state !== 'pre';
+/**
+ * Create match details section
+ */
+function createMatchDetails(match) {
+    const details = document.createElement('div');
+    details.className = 'match-details';
     
-    return `
-        <div class="team">
-            <div class="team-info">
-                <img src="${team.team.logo}" alt="${team.team.displayName}" class="team-logo">
-                <span class="team-name">${team.team.displayName}</span>
-            </div>
-            ${showScore ? `<span class="team-score">${score}</span>` : ''}
-        </div>
+    const time = document.createElement('div');
+    time.className = 'match-time';
+    time.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span>${match.status.type.shortDetail}</span>
     `;
-}
-
-// Create match details HTML
-function createMatchDetailsHTML(competition) {
-    const venue = competition.venue?.fullName || '';
-    const broadcast = competition.broadcasts?.[0]?.names?.[0] || '';
+    details.appendChild(time);
     
-    if (!venue && !broadcast) {
-        return '';
+    if (match.competitions[0]?.venue?.fullName) {
+        const venue = document.createElement('div');
+        venue.className = 'match-venue';
+        venue.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <span>${match.competitions[0].venue.fullName}</span>
+        `;
+        details.appendChild(venue);
     }
     
-    return `
-        <div class="match-details">
-            ${venue ? `
-                <div class="detail-item">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M8 8C9.1 8 10 7.1 10 6C10 4.9 9.1 4 8 4C6.9 4 6 4.9 6 6C6 7.1 6.9 8 8 8Z" fill="currentColor"/>
-                        <path d="M8 1C5.2 1 3 3.2 3 6C3 9.5 8 15 8 15C8 15 13 9.5 13 6C13 3.2 10.8 1 8 1Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                    </svg>
-                    ${venue}
-                </div>
-            ` : ''}
-            ${broadcast ? `
-                <div class="detail-item">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="2" y="3" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                        <path d="M5 11L5 13L11 13L11 11" stroke="currentColor" stroke-width="1.5"/>
-                        <line x1="8" y1="13" x2="8" y2="14" stroke="currentColor" stroke-width="1.5"/>
-                    </svg>
-                    ${broadcast}
-                </div>
-            ` : ''}
-        </div>
-    `;
+    return details;
 }
 
-// Create odds HTML
-function createOddsHTML(competition) {
-    const odds = competition.odds;
+/**
+ * Create odds display
+ */
+function createOddsDisplay(odds) {
+    const container = document.createElement('div');
+    container.className = 'odds-container';
     
-    if (!odds || !odds.length) {
-        return '';
-    }
+    const oddsData = [
+        { label: 'Home', value: odds.homeTeamOdds?.moneyLine },
+        { label: 'Draw', value: odds.drawOdds?.moneyLine },
+        { label: 'Away', value: odds.awayTeamOdds?.moneyLine }
+    ];
     
-    const primaryOdds = odds[0];
-    const homeOdds = primaryOdds.homeTeamOdds;
-    const awayOdds = primaryOdds.awayTeamOdds;
-    const drawOdds = primaryOdds.drawOdds;
+    oddsData.forEach(odd => {
+        if (odd.value) {
+            const item = document.createElement('div');
+            item.className = 'odds-item';
+            
+            const label = document.createElement('span');
+            label.className = 'odds-label';
+            label.textContent = odd.label;
+            
+            const value = document.createElement('span');
+            value.className = 'odds-value';
+            value.textContent = formatOdds(odd.value);
+            
+            item.appendChild(label);
+            item.appendChild(value);
+            container.appendChild(item);
+        }
+    });
     
-    if (!homeOdds && !awayOdds && !drawOdds) {
-        return '';
-    }
-    
-    return `
-        <div class="odds-section">
-            <div class="odds-title">Match Odds</div>
-            <div class="odds-container">
-                ${homeOdds ? `
-                    <div class="odd-item">
-                        <div class="odd-label">Home</div>
-                        <div class="odd-value">${formatOdds(homeOdds.moneyLine)}</div>
-                    </div>
-                ` : ''}
-                ${drawOdds ? `
-                    <div class="odd-item">
-                        <div class="odd-label">Draw</div>
-                        <div class="odd-value">${formatOdds(drawOdds.moneyLine)}</div>
-                    </div>
-                ` : ''}
-                ${awayOdds ? `
-                    <div class="odd-item">
-                        <div class="odd-label">Away</div>
-                        <div class="odd-value">${formatOdds(awayOdds.moneyLine)}</div>
-                    </div>
-                ` : ''}
-            </div>
-        </div>
-    `;
+    return container;
 }
 
-// Format odds
+/**
+ * Format odds value
+ */
 function formatOdds(value) {
-    if (!value) return 'N/A';
-    return value > 0 ? `+${value}` : value.toString();
+    if (value > 0) {
+        return `+${value}`;
+    }
+    return value.toString();
 }
+
+/**
+ * Update live match count
+ */
+function updateLiveCount(count) {
+    elements.liveCount.textContent = `${count} Live`;
+}
+
+/**
+ * Show loading state
+ */
+function showLoading() {
+    elements.loadingState.style.display = 'block';
+    elements.errorState.style.display = 'none';
+    elements.noMatchesState.style.display = 'none';
+    elements.matchesContainer.style.display = 'none';
+}
+
+/**
+ * Show error state
+ */
+function showError(message) {
+    elements.errorMessage.textContent = message || 'Unable to load matches. Please try again later.';
+    elements.loadingState.style.display = 'none';
+    elements.errorState.style.display = 'block';
+    elements.noMatchesState.style.display = 'none';
+    elements.matchesContainer.style.display = 'none';
+}
+
+/**
+ * Show no matches state
+ */
+function showNoMatches() {
+    elements.loadingState.style.display = 'none';
+    elements.errorState.style.display = 'none';
+    elements.noMatchesState.style.display = 'block';
+    elements.matchesContainer.style.display = 'none';
+    updateLiveCount(0);
+}
+
+/**
+ * Show matches container
+ */
+function showMatches() {
+    elements.loadingState.style.display = 'none';
+    elements.errorState.style.display = 'none';
+    elements.noMatchesState.style.display = 'none';
+    elements.matchesContainer.style.display = 'block';
+}
+
+// Initialize app when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+
+console.log('✅ Script loaded successfully');
