@@ -45,28 +45,41 @@ let selectedDate = null;
  */
 function init() {
     console.log('🚀 Initializing Live Soccer Scoreboard...');
+    console.log('🔧 API Config:', API_CONFIG);
     
-    // Set date picker to today
-    setDatePickerToToday();
-    
-    // Initial fetch
-    fetchScheduleData();
+    // Set today's date as default in date picker
+    const today = new Date();
+    elements.datePicker.value = formatDateForInput(today);
     
     // Setup event listeners
     setupEventListeners();
+    
+    // Test API connection
+    testAPIConnection();
+    
+    console.log('✅ Ready! Please select a date and click "Load Matches"');
 }
 
 /**
- * Set date picker to today's date
+ * Test API connection
  */
-function setDatePickerToToday() {
-    const today = new Date();
-    const dateString = formatDateForInput(today);
-    elements.datePicker.value = dateString;
-    if (elements.datePickerEmpty) {
-        elements.datePickerEmpty.value = dateString;
+async function testAPIConnection() {
+    console.log('🧪 Testing API connection...');
+    try {
+        const testUrl = `${API_CONFIG.PROXY}${encodeURIComponent('https://site.api.espn.com/apis/site/v2/sports/soccer/scoreboard')}`;
+        console.log('🧪 Test URL:', testUrl);
+        
+        const response = await fetch(testUrl);
+        console.log('🧪 Test Response Status:', response.status);
+        
+        if (response.ok) {
+            console.log('✅ API connection working!');
+        } else {
+            console.log('⚠️ API returned status:', response.status);
+        }
+    } catch (error) {
+        console.error('❌ API test failed:', error);
     }
-    selectedDate = today;
 }
 
 /**
@@ -93,64 +106,92 @@ function formatDateForAPI(date) {
  * Setup event listeners
  */
 function setupEventListeners() {
-    elements.refreshBtn.addEventListener('click', () => {
-        console.log('🔄 Manual refresh triggered');
-        fetchScheduleData();
-    });
-    
-    // Date picker change
-    elements.datePicker.addEventListener('change', (e) => {
-        selectedDate = new Date(e.target.value + 'T00:00:00');
-        console.log('📅 Date changed to:', selectedDate);
-        fetchScheduleData();
-    });
-    
-    // Date picker in empty state
-    if (elements.datePickerEmpty) {
-        elements.datePickerEmpty.addEventListener('change', (e) => {
-            selectedDate = new Date(e.target.value + 'T00:00:00');
-            elements.datePicker.value = e.target.value;
-            console.log('📅 Date changed to:', selectedDate);
+    // Load button click
+    if (elements.loadBtn) {
+        elements.loadBtn.addEventListener('click', () => {
+            const dateValue = elements.datePicker.value;
+            if (!dateValue) {
+                alert('Please select a date first!');
+                return;
+            }
+            selectedDate = new Date(dateValue + 'T12:00:00'); // Use noon to avoid timezone issues
+            console.log('📅 Loading matches for:', selectedDate.toDateString());
             fetchScheduleData();
         });
     }
     
-    // Today button
-    elements.todayBtn.addEventListener('click', () => {
-        setDatePickerToToday();
-        fetchScheduleData();
-    });
+    // Refresh button
+    if (elements.refreshBtn) {
+        elements.refreshBtn.addEventListener('click', () => {
+            console.log('🔄 Manual refresh triggered');
+            if (selectedDate) {
+                fetchScheduleData();
+            } else {
+                alert('Please select a date first!');
+            }
+        });
+    }
+    
+    // Enter key on date picker
+    if (elements.datePicker) {
+        elements.datePicker.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && elements.loadBtn) {
+                elements.loadBtn.click();
+            }
+        });
+    } else {
+        console.error('❌ Date picker element not found!');
+    }
 }
 
 /**
  * Fetch today's schedule data from ESPN API
  */
 async function fetchScheduleData() {
+    if (!selectedDate) {
+        alert('Please select a date first!');
+        return;
+    }
+    
     console.log('📡 Fetching schedule data...');
     showLoading();
     
     try {
         const dateParam = formatDateForAPI(selectedDate);
         const apiUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SCOREBOARD}?dates=${dateParam}`;
-        const url = `${API_CONFIG.PROXY}${encodeURIComponent(apiUrl)}`;
-        console.log('API Request:', url);
-        console.log('Selected Date:', selectedDate.toDateString());
+        const proxyUrl = `${API_CONFIG.PROXY}${encodeURIComponent(apiUrl)}`;
         
-        const response = await fetch(url);
+        console.log('📅 Date:', selectedDate.toDateString());
+        console.log('🔗 API URL:', apiUrl);
+        console.log('🔗 Proxy URL:', proxyUrl);
+        
+        const response = await fetch(proxyUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        
+        console.log('📊 Response Status:', response.status);
         
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();
-        console.log('✅ Data fetched successfully:', data);
+        console.log('✅ Data fetched successfully!');
+        console.log('📦 Events found:', data.events?.length || 0);
         
         currentMatchData = data;
+        
+        // Show refresh button and live indicator after first successful load
+        elements.headerActions.style.display = 'flex';
+        
         processAndDisplayMatches(data);
         
     } catch (error) {
-        console.error('❌ Error fetching schedule:', error);
-        showError(`Failed to load matches. The API service may be temporarily unavailable. Error: ${error.message}`);
+        console.error('❌ Error details:', error);
+        showError(`Failed to load matches. Error: ${error.message}`);
     }
 }
 
